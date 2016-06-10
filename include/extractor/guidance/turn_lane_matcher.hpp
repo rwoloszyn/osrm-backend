@@ -69,6 +69,8 @@ class TurnLaneMatcher
     Intersection simpleMatchTuplesToTurns(Intersection intersection,
                                           const LaneID num_lanes,
                                           const LaneDataVector &lane_data) const;
+
+    bool hasValidOverlaps(const LaneDataVector &lane_data) const;
 };
 
 } // namespace guidance

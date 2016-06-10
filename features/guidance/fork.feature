@@ -313,7 +313,7 @@ Feature: Fork Instructions
         When I route I should get
             | waypoints | route           | turns                                             |
             | a,j       | on,xbcj,xbcj    | depart,merge slight left,arrive                   |
-            | a,i       | on,xbcj,off,off | depart,merge slight left,fork slight right,arrive |
+            | a,i       | on,xbcj,off,off | depart,merge slight left,turn slight right,arrive |
 
     Scenario: Fork on motorway links
         Given the node map
