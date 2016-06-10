@@ -67,7 +67,7 @@ Feature: Turn Lane Guidance
             | a,d       | in,right,right       | depart,turn right,arrive        | ,0,   |
             | a,e       | in,left,left         | depart,turn left,arrive         | ,1,   |
 
-    Scenario: Basic Turn Lane 4-Way WWith U-Turn Lane
+    Scenario: Basic Turn Lane 4-Way With U-Turn Lane
         Given the node map
             |   |   | e |   |   |
             | a | 1 | b |   | c |
