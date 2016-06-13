@@ -517,6 +517,16 @@ inline bool entersRoundabout(const extractor::guidance::TurnInstruction instruct
             instruction.type == extractor::guidance::TurnType::EnterAndExitRotary);
 }
 
+inline bool leavesRoundabout(const extractor::guidance::TurnInstruction instruction)
+{
+    return (instruction.type == extractor::guidance::TurnType::ExitRoundabout ||
+            instruction.type == extractor::guidance::TurnType::ExitRotary ||
+            instruction.type == extractor::guidance::TurnType::ExitRoundaboutIntersection ||
+            instruction.type == extractor::guidance::TurnType::EnterAndExitRoundabout ||
+            instruction.type == extractor::guidance::TurnType::EnterAndExitRotary ||
+            instruction.type == extractor::guidance::TurnType::EnterAndExitRoundaboutIntersection);
+}
+
 } // namespace guidance
 } // namespace extractor
 } // namespace osrm

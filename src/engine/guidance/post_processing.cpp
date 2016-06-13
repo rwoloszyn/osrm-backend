@@ -411,9 +411,16 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
     const auto &one_back_step = steps[one_back_index];
 
     std::cout << "Steps: " << step_index << " " << one_back_index << std::endl;
+    //This function assumes driving on the right hand side of the streat
     const auto bearingsAreReversed = [](const double bearing_in, const double bearing_out) {
         // Nearly perfectly reversed angles have a difference close to 180 degrees (straight)
-        return angularDeviation(bearing_in, bearing_out) > 170;
+        const double left_turn_angle = [&]()
+        {
+            if( 0 <= bearing_out && bearing_out <= bearing_in )
+                return bearing_in - bearing_out;
+            return bearing_in + 360 - bearing_out;
+        }();
+        return angularDeviation(left_turn_angle,180) <= 35;
     };
 
     BOOST_ASSERT(!one_back_step.intersections.empty() && !current_step.intersections.empty());
@@ -445,7 +452,7 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
                          DirectionModifier::Straight &&
                      one_back_step.intersections.front().bearings.size() > 2)
                 steps[step_index].maneuver.instruction.type = TurnType::Turn;
-
+#if 1
             if (one_back_step.maneuver.instruction.type == TurnType::UseLane)
             {
                 if (current_step.maneuver.instruction.lane_tupel.lanes_in_turn == 0)
@@ -489,7 +496,7 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
                     }
                 }
             }
-
+#endif
             steps[two_back_index] = elongate(std::move(steps[two_back_index]), one_back_step);
             // If the previous instruction asked to continue, the name change will have to
             // be changed into a turn
