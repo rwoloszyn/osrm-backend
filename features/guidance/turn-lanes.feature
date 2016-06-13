@@ -407,8 +407,6 @@ Feature: Turn Lane Guidance
             | nodes | name  | turn:lanes:forward | oneway | highway  |
             | ab    | road  |                    | no     | primary  |
             | di    | road  |                    | yes    | primary  |
-            | bc    | road  |                    | yes    | primary  |
-            | cd    | road  |                    | yes    | primary  |
             | bc    | road  | \|through&right    | yes    | primary  |
             | cd    | road  | \|through&right    | yes    | primary  |
             | fc    | road  |                    | no     | tertiary |
@@ -468,9 +466,9 @@ Feature: Turn Lane Guidance
             | ek    | right  |                                       | yes    | primary   |            |
 
         When I route I should get
-            | waypoints | route               | turns                      | lanes |
-            | i,j       | left,bottom,bottom, | depart,round-exit-1,arrive | ,0,   |
-            | i,k       | left,right,right    | depart,round-exit-2,arrive | ,1,   |
+            | waypoints | route              | turns                      | lanes |
+            | i,j       | left,bottom,bottom | depart,round-exit-1,arrive | ,0,   |
+            | i,k       | left,right,right   | depart,round-exit-2,arrive | ,1,   |
 
     Scenario: Crossing Traffic Light
         Given the node map
@@ -652,4 +650,4 @@ Feature: Turn Lane Guidance
         When I route I should get
             | waypoints | route             | turns                                             | lanes |
             | a,j       | on,xbcj,xbcj,xbcj | depart,merge slight left,use lane straight,arrive | ,,1,  |
-            | a,i       | on,xbcj,off,off   | depart,merge slight left,fork slight right,arrive | ,,0,  |
+            | a,i       | on,xbcj,off,off   | depart,merge slight left,turn slight right,arrive | ,,0,  |
