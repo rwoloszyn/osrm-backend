@@ -2,7 +2,12 @@
 #include "util/guidance/turn_lanes.hpp"
 
 #include <boost/numeric/conversion/cast.hpp>
+
+#include <algorithm>
+#include <cstddef>
+#include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace osrm
 {
