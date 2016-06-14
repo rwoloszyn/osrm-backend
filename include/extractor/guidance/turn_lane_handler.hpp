@@ -26,7 +26,8 @@ namespace guidance
 
 // Given an Intersection, the graph to access the data and  the turn lanes, the turn lane matcher
 // assigns appropriate turn tupels to the different turns.
-
+namespace lanes
+{
 class TurnLaneHandler
 {
   public:
@@ -41,8 +42,6 @@ class TurnLaneHandler
 
   private:
     using LaneTupel = util::guidance::LaneTupel;
-    typedef std::map<std::string, std::pair<LaneID, LaneID>> LaneMap;
-
     std::unordered_map<LaneTupel, std::uint16_t> lane_tupels;
     const util::NodeBasedDynamicGraph &node_based_graph;
     const util::NameTable &turn_lane_strings;
@@ -64,10 +63,9 @@ class TurnLaneHandler
     Intersection simpleMatchTuplesToTurns(Intersection intersection,
                                           const LaneID num_lanes,
                                           const LaneDataVector &lane_data) const;
-
-    bool hasValidOverlaps(const LaneDataVector &lane_data) const;
 };
 
+} // namespace lanes
 } // namespace guidance
 } // namespace extractor
 } // namespace osrm

@@ -1,6 +1,6 @@
 #include "extractor/guidance/turn_instruction.hpp"
-#include "engine/guidance/post_processing.hpp"
 #include "engine/guidance/debug.hpp"
+#include "engine/guidance/post_processing.hpp"
 
 #include "engine/guidance/assemble_steps.hpp"
 #include "engine/guidance/toolkit.hpp"
@@ -41,9 +41,9 @@ inline bool choiceless(const RouteStep &step, const RouteStep &previous)
     BOOST_ASSERT(!step.intersections.empty());
     std::cout << "Checking for choice" << std::endl;
     const auto is_without_choice = previous.distance < 4 * MAX_COLLAPSE_DISTANCE &&
-           1 >= std::count(step.intersections.front().entry.begin(),
-                           step.intersections.front().entry.end(),
-                           true);
+                                   1 >= std::count(step.intersections.front().entry.begin(),
+                                                   step.intersections.front().entry.end(),
+                                                   true);
     std::cout << "Done: " << is_without_choice << std::endl;
     return is_without_choice;
 };
@@ -311,7 +311,8 @@ void closeOffRoundabout(const bool on_roundabout,
                         ::osrm::util::guidance::getTurnDirection(angle);
                 }
 
-                propagation_step.name = destination_name;;
+                propagation_step.name = destination_name;
+                ;
                 propagation_step.name_id = destinatino_name_id;
                 invalidateStep(steps[propagation_index + 1]);
                 break;
@@ -374,16 +375,15 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
     const auto &one_back_step = steps[one_back_index];
 
     std::cout << "Steps: " << step_index << " " << one_back_index << std::endl;
-    //This function assumes driving on the right hand side of the streat
+    // This function assumes driving on the right hand side of the streat
     const auto bearingsAreReversed = [](const double bearing_in, const double bearing_out) {
         // Nearly perfectly reversed angles have a difference close to 180 degrees (straight)
-        const double left_turn_angle = [&]()
-        {
-            if( 0 <= bearing_out && bearing_out <= bearing_in )
+        const double left_turn_angle = [&]() {
+            if (0 <= bearing_out && bearing_out <= bearing_in)
                 return bearing_in - bearing_out;
             return bearing_in + 360 - bearing_out;
         }();
-        return angularDeviation(left_turn_angle,180) <= 35;
+        return angularDeviation(left_turn_angle, 180) <= 35;
     };
 
     BOOST_ASSERT(!one_back_step.intersections.empty() && !current_step.intersections.empty());
@@ -439,12 +439,12 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
                     // turns to the number available at the current step, counting from the left
                     // (first += delta(current,one_back)). If the turn goes to the right, we need to
                     // reduce the number of available lanes to the number turning right.
-                    if (isRightTurn(current_step.maneuver.instruction))
+                    if (util::guidance::isRightTurn(current_step.maneuver.instruction))
                     {
                         // For right we should be fine, since we don't care for other lanes right of
                         // us stays the same
                     }
-                    else // if (isLeftTurn(current_step.maneuver.instruction))
+                    else // if (util::guidance::isLeftTurn(current_step.maneuver.instruction))
                     {
                         BOOST_ASSERT(one_back_step.maneuver.instruction.lane_tupel.lanes_in_turn >=
                                      current_step.maneuver.instruction.lane_tupel.lanes_in_turn);
@@ -468,7 +468,7 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
     }
     // very short segment after turn
     else if (one_back_step.distance <= MAX_COLLAPSE_DISTANCE &&
-              isCollapsableInstruction(current_step.maneuver.instruction))
+             isCollapsableInstruction(current_step.maneuver.instruction))
     {
         std::cout << "Second" << std::endl;
         // TODO check for lanes
@@ -635,7 +635,7 @@ std::vector<RouteStep> postProcess(std::vector<RouteStep> steps)
             has_entered_roundabout = false;
             on_roundabout = false;
         }
-        else if( has_entered_roundabout )
+        else if (has_entered_roundabout)
             steps[step_index + 1].maneuver.exit = step.maneuver.exit;
     }
 
@@ -705,7 +705,7 @@ std::vector<RouteStep> collapseTurns(std::vector<RouteStep> steps)
     for (std::size_t step_index = 1; step_index + 1 < steps.size(); ++step_index)
     {
         const auto &current_step = steps[step_index];
-        if( current_step.maneuver.instruction.type == TurnType::NoTurn )
+        if (current_step.maneuver.instruction.type == TurnType::NoTurn)
             continue;
         const auto one_back_index = getPreviousIndex(step_index);
         BOOST_ASSERT(one_back_index < steps.size());

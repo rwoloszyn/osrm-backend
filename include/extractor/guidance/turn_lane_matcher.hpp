@@ -13,7 +13,7 @@ namespace extractor
 {
 namespace guidance
 {
-namespace lane_matching
+namespace lanes
 {
 
 // Translate Turn Lane Tags into a matching modifier
@@ -39,7 +39,7 @@ typename Intersection::const_iterator findBestMatchForReverse(const std::string 
 // a match is trivial if all turns can be associated with their best match in a valid way.
 bool canMatchTrivially(const Intersection &intersection, const LaneDataVector &lane_data);
 
-} // namespace lane_matching
+} // namespace lanes
 } // namespace guidance
 } // namespace extractor
 } // namespace osrm

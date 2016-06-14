@@ -1,5 +1,6 @@
 #include "extractor/guidance/toolkit.hpp"
 #include "extractor/guidance/turn_lane_matcher.hpp"
+#include "util/guidance/toolkit.hpp"
 
 #include <boost/assert.hpp>
 
@@ -9,7 +10,7 @@ namespace extractor
 {
 namespace guidance
 {
-namespace lane_matching
+namespace lanes
 {
 
 // Translate Turn Tags into a Matching Direction Modifier
@@ -49,18 +50,8 @@ DirectionModifier::Enum getMatchingModifier(const std::string &tag)
 // check whether a match of a given tag and a turn instruction can be seen as valid
 bool isValidMatch(const std::string &tag, const TurnInstruction instruction)
 {
-    const auto hasLeftModifier = [](const TurnInstruction instruction) {
-        return instruction.direction_modifier == DirectionModifier::SlightLeft ||
-               instruction.direction_modifier == DirectionModifier::Left ||
-               instruction.direction_modifier == DirectionModifier::SharpLeft;
-    };
-
-    const auto hasRightModifier = [](const TurnInstruction instruction) {
-        return instruction.direction_modifier == DirectionModifier::SlightRight ||
-               instruction.direction_modifier == DirectionModifier::Right ||
-               instruction.direction_modifier == DirectionModifier::SharpRight;
-    };
-
+    using util::guidance::hasLeftModifier;
+    using util::guidance::hasRightModifier;
     const auto isMirroredModifier = [](const TurnInstruction instruction) {
         return instruction.type == TurnType::Merge;
     };
@@ -116,9 +107,8 @@ typename Intersection::const_iterator findBestMatch(const std::string &tag,
         intersection.end(),
         [idealized_angle, &tag](const ConnectedRoad &lhs, const ConnectedRoad &rhs) {
             // prefer valid matches
-            if (lane_matching::isValidMatch(tag, lhs.turn.instruction) !=
-                lane_matching::isValidMatch(tag, rhs.turn.instruction))
-                return lane_matching::isValidMatch(tag, lhs.turn.instruction);
+            if (isValidMatch(tag, lhs.turn.instruction) != isValidMatch(tag, rhs.turn.instruction))
+                return isValidMatch(tag, lhs.turn.instruction);
             // if the entry allowed flags don't match, we select the one with
             // entry allowed set to true
             if (lhs.entry_allowed != rhs.entry_allowed)
@@ -145,9 +135,8 @@ typename Intersection::const_iterator findBestMatchForReverse(const std::string 
         intersection.end(),
         [idealized_angle, &tag](const ConnectedRoad &lhs, const ConnectedRoad &rhs) {
             // prefer valid matches
-            if (lane_matching::isValidMatch(tag, lhs.turn.instruction) !=
-                lane_matching::isValidMatch(tag, rhs.turn.instruction))
-                return lane_matching::isValidMatch(tag, lhs.turn.instruction);
+            if (isValidMatch(tag, lhs.turn.instruction) != isValidMatch(tag, rhs.turn.instruction))
+                return isValidMatch(tag, lhs.turn.instruction);
             // if the entry allowed flags don't match, we select the one with
             // entry allowed set to true
             if (lhs.entry_allowed != rhs.entry_allowed)
@@ -158,8 +147,7 @@ typename Intersection::const_iterator findBestMatchForReverse(const std::string 
         });
 }
 
-bool canMatchTrivially(const Intersection &intersection,
-                       const LaneDataVector &lane_data)
+bool canMatchTrivially(const Intersection &intersection, const LaneDataVector &lane_data)
 {
     std::size_t road_index = 1, lane = 0;
     for (; road_index < intersection.size() && lane < lane_data.size(); ++road_index)
@@ -167,11 +155,10 @@ bool canMatchTrivially(const Intersection &intersection,
         if (intersection[road_index].entry_allowed)
         {
             BOOST_ASSERT(lane_data[lane].from != INVALID_LANEID);
-            if (!lane_matching::isValidMatch(lane_data[lane].tag,
-                                             intersection[road_index].turn.instruction))
+            if (!isValidMatch(lane_data[lane].tag, intersection[road_index].turn.instruction))
                 return false;
 
-            if (lane_matching::findBestMatch(lane_data[lane].tag, intersection) !=
+            if (findBestMatch(lane_data[lane].tag, intersection) !=
                 intersection.begin() + road_index)
                 return false;
             ++lane;

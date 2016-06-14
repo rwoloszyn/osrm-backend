@@ -11,6 +11,8 @@ namespace extractor
 {
 namespace guidance
 {
+namespace lanes
+{
 
 struct TurnLaneData
 {
@@ -21,6 +23,11 @@ struct TurnLaneData
     bool operator<(const TurnLaneData &other) const;
 };
 typedef std::vector<TurnLaneData> LaneDataVector;
+
+// convertes a string given in the OSM format into a TurnLaneData vector
+LaneDataVector laneDataFromString(std::string turn_lane_string);
+
+} // namespace lane_data_generation
 
 } // namespace guidance
 } // namespace extractor
