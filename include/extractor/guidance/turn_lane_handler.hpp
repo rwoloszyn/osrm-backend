@@ -24,7 +24,7 @@ namespace guidance
 // Given an Intersection, the graph to access the data and  the turn lanes, the turn lane matcher
 // assigns appropriate turn tupels to the different turns.
 
-class TurnLaneMatcher
+class TurnLaneHandler
 {
   public:
     struct TurnLaneData
@@ -37,7 +37,7 @@ class TurnLaneMatcher
     };
     typedef std::vector<TurnLaneData> LaneDataVector;
 
-    TurnLaneMatcher(const util::NodeBasedDynamicGraph &node_based_graph,
+    TurnLaneHandler(const util::NodeBasedDynamicGraph &node_based_graph,
                     const util::NameTable &turn_lane_strings,
                     const std::vector<QueryNode> &node_info_list,
                     const TurnAnalysis &turn_analysis);
@@ -60,7 +60,7 @@ class TurnLaneMatcher
     LaneDataVector findRelevantLaneData(const NodeID at, const Intersection &intersection);
 
     // partition lane data into lane data relevant at current turn and at next turn
-    std::pair<TurnLaneMatcher::LaneDataVector, TurnLaneMatcher::LaneDataVector> partitionLaneData(
+    std::pair<TurnLaneHandler::LaneDataVector, TurnLaneHandler::LaneDataVector> partitionLaneData(
         const NodeID at, LaneDataVector turn_lane_data, const Intersection &intersection) const;
 
     LaneDataVector handleNoneValueAtSimpleTurn(LaneDataVector lane_data,

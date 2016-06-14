@@ -1,5 +1,5 @@
 #include "extractor/guidance/constants.hpp"
-#include "extractor/guidance/turn_lane_matcher.hpp"
+#include "extractor/guidance/turn_lane_handler.hpp"
 #include "util/simple_logger.hpp"
 #include "util/typedefs.hpp"
 
@@ -175,7 +175,7 @@ typename Intersection::const_iterator findBestMatchForReverse(const std::string 
 }
 
 bool canMatchTrivially(const Intersection &intersection,
-                       const TurnLaneMatcher::LaneDataVector &lane_data)
+                       const TurnLaneHandler::LaneDataVector &lane_data)
 {
     std::size_t road_index = 1, lane = 0;
     for (; road_index < intersection.size() && lane < lane_data.size(); ++road_index)
@@ -207,7 +207,7 @@ std::size_t getNumberOfTurns(const Intersection &intersection)
 
 } // namespace detail
 
-bool TurnLaneMatcher::TurnLaneData::operator<(const TurnLaneMatcher::TurnLaneData &other) const
+bool TurnLaneHandler::TurnLaneData::operator<(const TurnLaneHandler::TurnLaneData &other) const
 {
     if (from < other.from)
         return true;
@@ -231,16 +231,16 @@ bool TurnLaneMatcher::TurnLaneData::operator<(const TurnLaneMatcher::TurnLaneDat
            std::find(tag_by_modifier, tag_by_modifier + 8, other.tag);
 }
 
-std::size_t findTag(const std::string &tag, const TurnLaneMatcher::LaneDataVector &data)
+std::size_t findTag(const std::string &tag, const TurnLaneHandler::LaneDataVector &data)
 {
     return std::distance(
         data.begin(),
-        std::find_if(data.begin(), data.end(), [&](const TurnLaneMatcher::TurnLaneData &lane_data) {
+        std::find_if(data.begin(), data.end(), [&](const TurnLaneHandler::TurnLaneData &lane_data) {
             return tag == lane_data.tag;
         }));
 }
 
-bool TurnLaneMatcher::hasValidOverlaps(const LaneDataVector &lane_data) const
+bool TurnLaneHandler::hasValidOverlaps(const LaneDataVector &lane_data) const
 {
     // Allow an overlap of at most one. Larger overlaps would result in crossing another turn, which
     // is invalid
@@ -252,7 +252,7 @@ bool TurnLaneMatcher::hasValidOverlaps(const LaneDataVector &lane_data) const
     return true;
 }
 
-TurnLaneMatcher::TurnLaneMatcher(const util::NodeBasedDynamicGraph &node_based_graph,
+TurnLaneHandler::TurnLaneHandler(const util::NodeBasedDynamicGraph &node_based_graph,
                                  const util::NameTable &turn_lane_strings,
                                  const std::vector<QueryNode> &node_info_list,
                                  const TurnAnalysis &turn_analysis)
@@ -284,7 +284,7 @@ TurnLaneMatcher::TurnLaneMatcher(const util::NodeBasedDynamicGraph &node_based_g
     (130, turn slight right, <3,2,0>) (180,ramp straight,<3,1,1>), and (320, turn sharp left,
    <3,1,2>)
  */
-Intersection TurnLaneMatcher::assignTurnLanes(const EdgeID via_edge,
+Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
                                               Intersection intersection) const
 {
     const auto &data = node_based_graph.GetEdgeData(via_edge);
@@ -659,8 +659,8 @@ Intersection TurnLaneMatcher::assignTurnLanes(const EdgeID via_edge,
    intersection
    and the lane data to see what turns we have to augment by the none-lanes
  */
-TurnLaneMatcher::LaneDataVector
-TurnLaneMatcher::handleNoneValueAtSimpleTurn(LaneDataVector lane_data,
+TurnLaneHandler::LaneDataVector
+TurnLaneHandler::handleNoneValueAtSimpleTurn(LaneDataVector lane_data,
                                              const Intersection &intersection) const
 {
     if (intersection.empty() || lane_data.empty() || findTag("none", lane_data) == lane_data.size())
@@ -924,7 +924,7 @@ TurnLaneMatcher::handleNoneValueAtSimpleTurn(LaneDataVector lane_data,
  * following
  * the turn, offers no straight turn, or only non-trivial turn operations.
  */
-bool TurnLaneMatcher::isSimpleIntersection(const LaneDataVector &lane_data,
+bool TurnLaneHandler::isSimpleIntersection(const LaneDataVector &lane_data,
                                            const Intersection &intersection) const
 {
     if (lane_data.empty())
@@ -1035,8 +1035,8 @@ bool TurnLaneMatcher::isSimpleIntersection(const LaneDataVector &lane_data,
     return false;
 }
 
-std::pair<TurnLaneMatcher::LaneDataVector, TurnLaneMatcher::LaneDataVector>
-TurnLaneMatcher::partitionLaneData(const NodeID at,
+std::pair<TurnLaneHandler::LaneDataVector, TurnLaneHandler::LaneDataVector>
+TurnLaneHandler::partitionLaneData(const NodeID at,
                                    LaneDataVector turn_lane_data,
                                    const Intersection &intersection) const
 {
@@ -1189,7 +1189,7 @@ TurnLaneMatcher::partitionLaneData(const NodeID at,
     return {std::move(first), std::move(second)};
 }
 
-Intersection TurnLaneMatcher::simpleMatchTuplesToTurns(Intersection intersection,
+Intersection TurnLaneHandler::simpleMatchTuplesToTurns(Intersection intersection,
                                                        const LaneID num_lanes,
                                                        const LaneDataVector &lane_data) const
 {

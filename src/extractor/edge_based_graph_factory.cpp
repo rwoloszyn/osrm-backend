@@ -11,7 +11,7 @@
 
 #include "extractor/guidance/toolkit.hpp"
 #include "extractor/guidance/turn_analysis.hpp"
-#include "extractor/guidance/turn_lane_matcher.hpp"
+#include "extractor/guidance/turn_lane_handler.hpp"
 #include "extractor/suffix_table.hpp"
 
 #include <boost/assert.hpp>
@@ -342,7 +342,7 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
                                          m_compressed_edge_container,
                                          name_table,
                                          street_name_suffix_table);
-    guidance::TurnLaneMatcher turn_lane_matcher(*m_node_based_graph, turn_lanes, m_node_info_list,
+    guidance::TurnLaneHandler turn_lane_handler(*m_node_based_graph, turn_lanes, m_node_info_list,
                                                 turn_analysis);
 
     bearing_class_by_node_based_node.resize(m_node_based_graph->GetNumberOfNodes(),
@@ -364,7 +364,7 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
             intersection =
                 turn_analysis.assignTurnTypes(node_u, edge_from_u, std::move(intersection));
 
-            intersection = turn_lane_matcher.assignTurnLanes(edge_from_u, std::move(intersection));
+            intersection = turn_lane_handler.assignTurnLanes(edge_from_u, std::move(intersection));
             const auto possible_turns = turn_analysis.transformIntersectionIntoTurns(intersection);
 
             // the entry class depends on the turn, so we have to classify the interesction for
