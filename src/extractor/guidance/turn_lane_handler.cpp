@@ -97,12 +97,6 @@ Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
     // need to switch statements when fixed
     // const auto num_lanes = std::count(turn_lane_string.begin(), turn_lane_string.end(), '|') + 1;
 
-    std::cout << "Intersection\n";
-    for (auto &road : intersection)
-    {
-        std::cout << toString(road) << std::endl;
-    }
-
     // going straight, due to traffic signals, we can have uncompressed geometry
     if (intersection.size() == 2 &&
         ((data.lane_string_id != INVALID_LANE_STRINGID &&
@@ -110,10 +104,6 @@ Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
               node_based_graph.GetEdgeData(intersection[1].turn.eid).lane_string_id) ||
          angularDeviation(intersection[1].turn.angle, STRAIGHT_ANGLE) < FUZZY_ANGLE_DIFFERENCE))
     {
-        std::cout << "In: " << data.lane_string_id << " out: "
-                  << node_based_graph.GetEdgeData(intersection[1].turn.eid).lane_string_id
-                  << std::endl;
-        std::cout << "Nothing to do, suppressed turn and turn lanes continue" << std::endl;
         return intersection;
     }
 
@@ -182,7 +172,6 @@ Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
         auto previous_lane_data =
             laneDataFromString(previous_string);
 
-        std::cout << "Could Have Previous: " << previous_string << std::endl;
         if (isSimpleIntersection(previous_lane_data, previous_intersection))
             return "";
 
@@ -197,13 +186,7 @@ Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
         return intersection;
     }
     LaneID num_lanes = countLanes(turn_lane_string);
-    std::cout << "Num Lanes: " << (int)num_lanes << " for " << turn_lane_string << std::endl;
-
     auto lane_data = laneDataFromString(turn_lane_string);
-    std::cout << "Lane: " << turn_lane_string << " Previous: " << previous_lane_string << std::endl;
-    std::cout << "Intersection:\n";
-    for (auto road : intersection)
-        std::cout << "\t" << toString(road) << std::endl;
 
     // if we see an invalid conversion, we stop immediately
     if (!turn_lane_string.empty() && lane_data.empty())
@@ -229,10 +212,6 @@ Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
         detail::findTag("reverse", lane_data) == lane_data.size() &&
         lane_data.size() + 1 == possible_entries)
     {
-        auto at = node_based_graph.GetTarget(via_edge);
-        std::cout << "Invalidated U-Turn at Location: " << std::setprecision(12)
-                  << toFloating(node_info_list[at].lat) << " " << toFloating(node_info_list[at].lon)
-                  << std::endl;
         intersection[0].entry_allowed = false;
     }
 
@@ -243,25 +222,13 @@ Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
                 possible_entries &&
         intersection[0].entry_allowed && lane_data.size() == detail::findTag("none", lane_data))
     {
-        std::cout << "Adding entry to lane data" << std::endl;
-        // Needs to handle u-turn edge, sort lanes accordingly
-        if (lane_data.back().tag != "left" && lane_data.back().tag != "sharp_left")
-        {
-            std::cout << "ADD" << std::endl;
-            auto at = node_based_graph.GetTarget(via_edge);
-            std::cout << "Location: " << std::setprecision(12) << toFloating(node_info_list[at].lat)
-                      << " " << toFloating(node_info_list[at].lon) << std::endl;
-        }
         lane_data.push_back({"reverse", lane_data.back().to, lane_data.back().to});
     }
 
     bool is_simple = isSimpleIntersection(lane_data, intersection);
-    std::cout << "IsSimple: " << is_simple << std::endl;
-
     if (is_simple && !turn_lane_string.empty())
     {
         lane_data = handleNoneValueAtSimpleTurn(std::move(lane_data), intersection);
-        std::cout << "A" << std::endl;
         if (canMatchTrivially(intersection, lane_data))
             return simpleMatchTuplesToTurns(std::move(intersection), num_lanes, lane_data);
         else
@@ -281,7 +248,6 @@ Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
         if (is_simple && !previous_lane_string.empty())
         {
             lane_data = handleNoneValueAtSimpleTurn(std::move(lane_data), intersection);
-            std::cout << "B" << std::endl;
             if (canMatchTrivially(intersection, lane_data))
                 return simpleMatchTuplesToTurns(std::move(intersection), num_lanes, lane_data);
             else
@@ -292,11 +258,6 @@ Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
             if (lane_data.size() >= detail::getNumberOfTurns(previous_intersection) &&
                 previous_intersection.size() != 2)
             {
-                std::cout << "CP" << std::endl;
-                auto at = node_based_graph.GetTarget(via_edge);
-                std::cout << "Location: " << std::setprecision(12)
-                          << toFloating(node_info_list[at].lat) << " "
-                          << toFloating(node_info_list[at].lon) << std::endl;
                 lane_data = partitionLaneData(node_based_graph.GetTarget(previous_id),
                                               std::move(lane_data),
                                               previous_intersection)
@@ -309,8 +270,6 @@ Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
                     isSimpleIntersection(lane_data, intersection))
                 {
                     lane_data = handleNoneValueAtSimpleTurn(std::move(lane_data), intersection);
-
-                    std::cout << "C" << std::endl;
 
                     if (canMatchTrivially(intersection, lane_data))
                         return simpleMatchTuplesToTurns(
@@ -367,7 +326,6 @@ Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
         */
         if (lane_data.size() >= detail::getNumberOfTurns(intersection))
         {
-            std::cout << "DP" << std::endl;
             if (detail::findTag("merge_to_left", lane_data) != lane_data.size() ||
                 detail::findTag("merge_to_right", lane_data) != lane_data.size())
                 return intersection;
@@ -382,8 +340,6 @@ Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
                 isSimpleIntersection(lane_data, intersection))
             {
                 lane_data = handleNoneValueAtSimpleTurn(std::move(lane_data), intersection);
-
-                std::cout << "D" << std::endl;
 
                 if (canMatchTrivially(intersection, lane_data))
                     return simpleMatchTuplesToTurns(std::move(intersection), num_lanes, lane_data);
@@ -710,11 +666,8 @@ bool TurnLaneHandler::isSimpleIntersection(const LaneDataVector &lane_data,
     if (num_turns + std::size_t{1} == lane_data.size() && lane_data.front().tag != "none" &&
         lane_data.back().tag != "none")
     {
-        std::cout << "Num Turns" << std::endl;
         return false;
     }
-
-    std::cout << "Here" << std::endl;
 
     // more turns than lane data
     if (num_turns > lane_data.size() &&
@@ -723,8 +676,6 @@ bool TurnLaneHandler::isSimpleIntersection(const LaneDataVector &lane_data,
                 return data.tag == "none";
             }))
     {
-        std::cout << "NUm Turns and none doesn't match" << std::endl;
-        std::cout << "Num Turns: " << num_turns << " lane size: " << lane_data.size() << std::endl;
         return false;
     }
 
@@ -732,7 +683,6 @@ bool TurnLaneHandler::isSimpleIntersection(const LaneDataVector &lane_data,
         !(detail::findTag("reverse", lane_data) ||
           (lane_data.back().tag != "left" && lane_data.back().tag != "sharp_left")))
     {
-        std::cout << "Reverse Check says its not simple" << std::endl;
         return false;
     }
 
@@ -766,12 +716,8 @@ bool TurnLaneHandler::isSimpleIntersection(const LaneDataVector &lane_data,
         // in case of u-turns, we might need to activate them first
         all_simple &= (best_match->entry_allowed || match_index == 0);
         all_simple &= isValidMatch(data.tag, best_match->turn.instruction);
-        std::cout << "Tag: " << data.tag << " matched to: " << match_index << " valid: "
-                  << isValidMatch(data.tag, best_match->turn.instruction)
-                  << " all simple now: " << all_simple << std::endl;
     }
 
-    std::cout << "All Simple: " << all_simple << std::endl;
     // either all indices are matched, or we have a single none-value
     if (all_simple && (matched_indices.size() == lane_data.size() ||
                        (matched_indices.size() + 1 == lane_data.size() && has_none)))
@@ -910,9 +856,6 @@ TurnLaneHandler::partitionLaneData(const NodeID at,
             first.push_back(turn_lane_data[lane]);
     }
 
-    std::cout << "Straightmost Tag: " << straightmost_tag_index << " of " << turn_lane_data.size()
-              << std::endl;
-
     if (straightmost_tag_index == turn_lane_data.size() &&
         static_cast<std::size_t>(
             std::count(matched_at_second.begin(), matched_at_second.end(), true)) ==
@@ -924,14 +867,6 @@ TurnLaneHandler::partitionLaneData(const NodeID at,
         std::sort(first.begin(), first.end());
     }
 
-    std::cout << "[Partition Result]\n";
-    std::cout << "[First]\n";
-    for (auto lane : first)
-        std::cout << "\t" << lane.tag << " " << (int)lane.from << " " << (int)lane.to << std::endl;
-    std::cout << "[Second]\n";
-    for (auto lane : second)
-        std::cout << "\t" << lane.tag << " " << (int)lane.from << " " << (int)lane.to << std::endl;
-
     // TODO augment straightmost turn
     return {std::move(first), std::move(second)};
 }
@@ -940,7 +875,6 @@ Intersection TurnLaneHandler::simpleMatchTuplesToTurns(Intersection intersection
                                                        const LaneID num_lanes,
                                                        const LaneDataVector &lane_data) const
 {
-    std::cout << "Assign Turns" << std::endl;
     if (lane_data.empty())
         return intersection;
 
@@ -948,7 +882,6 @@ Intersection TurnLaneHandler::simpleMatchTuplesToTurns(Intersection intersection
             return boost::starts_with(data.tag, "merge");
         }) > 0)
     {
-        std::cout << "Bailing since intersection size is low, or we consider merge" << std::endl;
         return intersection;
     }
 
@@ -961,24 +894,6 @@ Intersection TurnLaneHandler::simpleMatchTuplesToTurns(Intersection intersection
                 << "Did not handle \"none\" prior to lane assignment";
             return intersection;
         }
-
-    for (auto entry : lane_data)
-        std::cout << entry.tag << " " << (int)entry.from << " " << (int)entry.to << std::endl;
-    /*
-    if (!(lane_data.size() ==
-          static_cast<std::size_t>(
-              (lane_data.back().tag == "reverse" && !intersection[0].entry_allowed) ? 1 : 0) +
-              possible_entries))
-    {
-        std::cout << "Data: " << lane_data.size() << " entries: " << possible_entries << std::endl;
-    }
-    BOOST_ASSERT(
-        lane_data.size() ==
-        static_cast<std::size_t>(
-            (lane_data.back().tag == "reverse" && (!intersection[0].entry_allowed &&
-    detail::findTag("sharp_left",lane_data) == lane_data.size()  ) ? 1 : 0) +
-            possible_entries);
-    */
 
     std::size_t valid_turn = 0;
     for (std::size_t road_index = 1;
@@ -993,29 +908,6 @@ Intersection TurnLaneHandler::simpleMatchTuplesToTurns(Intersection intersection
                 lane_data[valid_turn].from};
             const bool uses_all_lanes =
                 lane_data[valid_turn].to - lane_data[valid_turn].from + 1 == num_lanes;
-            if (findBestMatch(lane_data[valid_turn].tag, intersection) !=
-                intersection.begin() + road_index)
-            {
-                std::cout << "Failed to match: " << lane_data[valid_turn].tag << std::endl;
-                std::cout << "Best Match: "
-                          << findBestMatch(lane_data[valid_turn].tag, intersection)
-                                 ->turn.angle
-                          << std::endl;
-                std::cout
-                    << "Location: " << std::setprecision(12)
-                    << toFloating(
-                           node_info_list[node_based_graph.GetTarget(intersection[0].turn.eid)].lat)
-                    << " "
-                    << toFloating(
-                           node_info_list[node_based_graph.GetTarget(intersection[0].turn.eid)].lon)
-                    << std::endl;
-                for (auto ld : lane_data)
-                    std::cout << "\t" << ld.tag << " " << (int)ld.from << " " << (int)ld.to
-                              << std::endl;
-                std::cout << "Turns\n";
-                for (auto road : intersection)
-                    std::cout << "\t" << toString(road) << std::endl;
-            }
             BOOST_ASSERT(findBestMatch(lane_data[valid_turn].tag, intersection) ==
                          intersection.begin() + road_index);
             ++valid_turn;
@@ -1039,7 +931,6 @@ Intersection TurnLaneHandler::simpleMatchTuplesToTurns(Intersection intersection
                     return intersection;
                 u_turn = intersection.size() - 1;
             }
-            std::cout << "Adding U-Turn for reverse lane" << std::endl;
             intersection[u_turn].entry_allowed = true;
             intersection[u_turn].turn.instruction.type = TurnType::Turn;
             intersection[u_turn].turn.instruction.direction_modifier = DirectionModifier::UTurn;
@@ -1051,8 +942,6 @@ Intersection TurnLaneHandler::simpleMatchTuplesToTurns(Intersection intersection
             util::SimpleLogger().Write(logDEBUG) << "failed in turn lane matching.";
         }
     }
-
-    std::cout << "Successfully assigned turns" << std::endl;
     return intersection;
 }
 
