@@ -1,13 +1,16 @@
-#ifndef OSRM_EXTRACTOR_GUIDANCE_TURN_LANE_MATCHER_HPP_
-#define OSRM_EXTRACTOR_GUIDANCE_TURN_LANE_MATCHER_HPP_
+#ifndef OSRM_EXTRACTOR_GUIDANCE_TURN_LANE_HANDLER_HPP_
+#define OSRM_EXTRACTOR_GUIDANCE_TURN_LANE_HANDLER_HPP_
 
 #include "extractor/guidance/intersection.hpp"
 #include "extractor/guidance/turn_analysis.hpp"
+#include "extractor/guidance/turn_lane_data.hpp"
 #include "extractor/query_node.hpp"
+
 #include "util/guidance/turn_lanes.hpp"
 #include "util/name_table.hpp"
 #include "util/node_based_graph.hpp"
 #include "util/typedefs.hpp"
+
 #include <map>
 #include <string>
 #include <unordered_map>
@@ -27,14 +30,6 @@ namespace guidance
 class TurnLaneHandler
 {
   public:
-    struct TurnLaneData
-    {
-        std::string tag;
-        LaneID from;
-        LaneID to;
-
-        bool operator<(const TurnLaneData &other) const;
-    };
     typedef std::vector<TurnLaneData> LaneDataVector;
 
     TurnLaneHandler(const util::NodeBasedDynamicGraph &node_based_graph,
@@ -77,4 +72,4 @@ class TurnLaneHandler
 } // namespace extractor
 } // namespace osrm
 
-#endif // OSRM_EXTRACTOR_GUIDANCE_TURN_LANE_MATCHER_HPP_
+#endif // OSRM_EXTRACTOR_GUIDANCE_TURN_LANE_HANDLER_HPP_
