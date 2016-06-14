@@ -44,7 +44,7 @@ inline bool choiceless(const RouteStep &step, const RouteStep &previous)
                                                    step.intersections.front().entry.end(),
                                                    true);
     return is_without_choice;
-};
+}
 
 // List of types that can be collapsed, if all other restrictions pass
 bool isCollapsableInstruction(const TurnInstruction instruction)
@@ -395,49 +395,6 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
                          DirectionModifier::Straight &&
                      one_back_step.intersections.front().bearings.size() > 2)
                 steps[step_index].maneuver.instruction.type = TurnType::Turn;
-            if (one_back_step.maneuver.instruction.type == TurnType::UseLane)
-            {
-                if (current_step.maneuver.instruction.lane_tupel.lanes_in_turn == 0)
-                {
-                    steps[step_index].maneuver.instruction.lane_tupel =
-                        one_back_step.maneuver.instruction.lane_tupel;
-                }
-                else
-                {
-                    // if we see a lane restriction with a turn right after, we need to restrict the
-                    // possible lanes we report.
-                    //
-                    // -------|    |------
-                    //  ->-^|
-                    // -------     |------
-                    //  ->-v|
-                    // -------|    |------
-                    //
-                    // will result in use lane 1,2 and then turn left/right with a restriction to
-                    // one lane. If our turn goes to the left, we need to restrict the number of
-                    // turns to the number available at the current step, counting from the left
-                    // (first += delta(current,one_back)). If the turn goes to the right, we need to
-                    // reduce the number of available lanes to the number turning right.
-                    if (util::guidance::isRightTurn(current_step.maneuver.instruction))
-                    {
-                        // For right we should be fine, since we don't care for other lanes right of
-                        // us stays the same
-                    }
-                    else // if (util::guidance::isLeftTurn(current_step.maneuver.instruction))
-                    {
-                        BOOST_ASSERT(one_back_step.maneuver.instruction.lane_tupel.lanes_in_turn >=
-                                     current_step.maneuver.instruction.lane_tupel.lanes_in_turn);
-                        const auto delta =
-                            one_back_step.maneuver.instruction.lane_tupel.lanes_in_turn -
-                            current_step.maneuver.instruction.lane_tupel.lanes_in_turn;
-                        steps[step_index].maneuver.instruction.lane_tupel = {
-                            current_step.maneuver.instruction.lane_tupel.lanes_in_turn,
-                            LaneID(current_step.maneuver.instruction.lane_tupel
-                                       .first_lane_from_the_right +
-                                   delta)};
-                    }
-                }
-            }
             steps[two_back_index] = elongate(std::move(steps[two_back_index]), one_back_step);
             // If the previous instruction asked to continue, the name change will have to
             // be changed into a turn
