@@ -6,6 +6,7 @@
 #include "extractor/guidance/turn_lane_data.hpp"
 
 #include "util/guidance/turn_lanes.hpp"
+#include "util/node_based_graph.hpp"
 
 namespace osrm
 {
@@ -36,8 +37,14 @@ typename Intersection::const_iterator findBestMatch(const std::string &tag,
 typename Intersection::const_iterator findBestMatchForReverse(const std::string &leftmost_tag,
                                                               const Intersection &intersection);
 
-// a match is trivial if all turns can be associated with their best match in a valid way.
+// a match is trivial if all turns can be associated with their best match in a valid way and the
+// matches occur in order
 bool canMatchTrivially(const Intersection &intersection, const LaneDataVector &lane_data);
+
+// perform a trivial match on the turn lanes
+Intersection triviallyMatchLanesToTurns(Intersection intersection,
+                                        const LaneDataVector &lane_data,
+                                        const util::NodeBasedDynamicGraph &node_based_graph);
 
 } // namespace lanes
 } // namespace guidance
