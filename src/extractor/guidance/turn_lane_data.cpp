@@ -41,6 +41,9 @@ LaneDataVector laneDataFromString(std::string turn_lane_string)
 {
     typedef std::unordered_map<std::string, std::pair<LaneID, LaneID>> LaneMap;
 
+    // FIXME this is a workaround due to https://github.com/cucumber/cucumber-js/issues/417,
+    // need to switch statements when fixed
+    // const auto num_lanes = std::count(turn_lane_string.begin(), turn_lane_string.end(), '|') + 1;
     // count the number of lanes
     const auto num_lanes = [](const std::string &turn_lane_string) {
         return boost::numeric_cast<LaneID>(
@@ -115,7 +118,6 @@ LaneDataVector laneDataFromString(std::string turn_lane_string)
 }
 
 } // namespace lanes
-
 } // namespace guidance
 } // namespace extractor
 } // namespace osrm

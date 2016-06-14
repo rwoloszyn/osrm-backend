@@ -1,4 +1,5 @@
 #include "extractor/guidance/intersection.hpp"
+#include "extractor/guidance/toolkit.hpp"
 
 namespace osrm
 {
@@ -28,6 +29,25 @@ std::string toString(const ConnectedRoad &road)
         " " + std::to_string(static_cast<std::int32_t>(
                   road.turn.instruction.lane_tupel.first_lane_from_the_right));
     return result;
+}
+
+Intersection::iterator findClosestTurn(Intersection &intersection, const double angle)
+{
+    return std::min_element(intersection.begin(),
+                            intersection.end(),
+                            [angle](const ConnectedRoad &lhs, const ConnectedRoad &rhs) {
+                                return angularDeviation(lhs.turn.angle, angle) <
+                                       angularDeviation(rhs.turn.angle, angle);
+                            });
+}
+Intersection::const_iterator findClosestTurn(const Intersection &intersection, const double angle)
+{
+    return std::min_element(intersection.cbegin(),
+                            intersection.cend(),
+                            [angle](const ConnectedRoad &lhs, const ConnectedRoad &rhs) {
+                                return angularDeviation(lhs.turn.angle, angle) <
+                                       angularDeviation(rhs.turn.angle, angle);
+                            });
 }
 
 } // namespace guidance

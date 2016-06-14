@@ -1,5 +1,5 @@
-#include "extractor/guidance/intersection_generator.hpp"
 #include "extractor/guidance/constants.hpp"
+#include "extractor/guidance/intersection_generator.hpp"
 #include "extractor/guidance/toolkit.hpp"
 
 #include <algorithm>
@@ -25,7 +25,6 @@ IntersectionGenerator::IntersectionGenerator(
     : node_based_graph(node_based_graph), restriction_map(restriction_map),
       barrier_nodes(barrier_nodes), node_info_list(node_info_list),
       compressed_edge_container(compressed_edge_container)
-
 {
 }
 

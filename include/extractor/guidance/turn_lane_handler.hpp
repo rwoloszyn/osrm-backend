@@ -38,7 +38,7 @@ class TurnLaneHandler
                     const std::vector<QueryNode> &node_info_list,
                     const TurnAnalysis &turn_analysis);
 
-    Intersection assignTurnLanes(const EdgeID via_edge, Intersection intersection) const;
+    Intersection assignTurnLanes(const NodeID at, const EdgeID via_edge, Intersection intersection) const;
 
   private:
     using LaneTupel = util::guidance::LaneTupel;

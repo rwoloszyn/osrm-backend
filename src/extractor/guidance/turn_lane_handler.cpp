@@ -1,4 +1,5 @@
 #include "extractor/guidance/constants.hpp"
+#include "extractor/guidance/turn_discovery.hpp"
 #include "extractor/guidance/turn_lane_handler.hpp"
 #include "extractor/guidance/turn_lane_matcher.hpp"
 #include "util/simple_logger.hpp"
@@ -22,19 +23,6 @@ namespace lanes
 
 namespace detail
 {
-// find turn that is closest to a given angle
-std::size_t findClosestTurnIndex(const Intersection &intersection, const double angle)
-{
-    const auto itr = std::min_element(intersection.begin(),
-                                      intersection.end(),
-                                      [angle](const ConnectedRoad &lhs, const ConnectedRoad &rhs) {
-                                          return angularDeviation(lhs.turn.angle, angle) <
-                                                 angularDeviation(rhs.turn.angle, angle);
-                                      });
-    return std::distance(intersection.begin(), itr);
-}
-
-
 std::size_t getNumberOfTurns(const Intersection &intersection)
 {
     return std::count_if(intersection.begin(), intersection.end(), [](const ConnectedRoad &road) {
@@ -42,14 +30,12 @@ std::size_t getNumberOfTurns(const Intersection &intersection)
     });
 }
 
-
 std::size_t findTag(const std::string &tag, const LaneDataVector &data)
 {
-    return std::distance(
-        data.begin(),
-        std::find_if(data.begin(), data.end(), [&](const TurnLaneData &lane_data) {
-            return tag == lane_data.tag;
-        }));
+    return std::distance(data.begin(),
+                         std::find_if(data.begin(), data.end(), [&](const TurnLaneData &lane_data) {
+                             return tag == lane_data.tag;
+                         }));
 }
 
 } // namespace detail
@@ -67,8 +53,7 @@ TurnLaneHandler::TurnLaneHandler(const util::NodeBasedDynamicGraph &node_based_g
     Turn lanes are given in the form of strings that closely correspond to the direction modifiers
    we use for our turn types. However, we still cannot simply perform a 1:1 assignment.
 
-    In this function we match the turn lane strings to the actual turns.
-    The input contains of a string of the format |left|through;right|right| for a setup like
+   This function parses the turn_lane_strings of a format that describes an intersection as:
 
     ----------
     A -^
@@ -78,15 +63,11 @@ TurnLaneHandler::TurnLaneHandler(const util::NodeBasedDynamicGraph &node_based_g
     C -v
     ----------
 
-    For this setup, we coul get a set of turns of the form
-
+    with a string like  |left|through;right|right| and performs an assignment onto the turns:
     (130, turn slight right), (180, ramp straight), (320, turn sharp left)
-
-    Here we need to augment to:
-    (130, turn slight right, <3,2,0>) (180,ramp straight,<3,1,1>), and (320, turn sharp left,
-   <3,1,2>)
  */
-Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
+Intersection TurnLaneHandler::assignTurnLanes(const NodeID at,
+                                              const EdgeID via_edge,
                                               Intersection intersection) const
 {
     const auto &data = node_based_graph.GetEdgeData(via_edge);
@@ -113,68 +94,36 @@ Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
             std::count(turn_lane_string.begin(), turn_lane_string.end(), '&'));
     };
 
+    NodeID previous_node = SPECIAL_NODEID;
     Intersection previous_intersection;
     EdgeID previous_id = SPECIAL_EDGEID;
+
+    //Get the previous lane string. We only accept strings that stem from a not-simple intersection and are not empty.
     const auto previous_lane_string = [&]() -> std::string {
-        /* We need to find the intersection that is located prior to via_edge.
-         *
-         * NODE_X  -> PREVIOUS_ID            -> NODE -> VIA_EDGE -> INTERSECTION
-         * NODE_X? <- STRAIGHTMOST           <- NODE <- UTURN
-         * NODE_X? -> UTURN == PREVIOUSE_ID? -> NODE -> VIA_EDGE
-         *
-         * To do so, we first get the intersection at NODE and find the straightmost turn from that
-         * node. This will result in NODE_X. The uturn in the intersection at NODE_X should be
-         * PREVIOUS_ID. To verify that find, we check the intersection using our PREVIOUS_ID
-         * candidate to check the intersection at NODE for via_edge
-         */
-        const constexpr double COMBINE_DISTANCE_CUTOFF = 30;
-        if (data.distance > COMBINE_DISTANCE_CUTOFF)
-            return {};
-
-        const auto uturn_id = intersection[0].turn.eid;
-        const auto source_intersection =
-            turn_analysis.getIntersection(node_based_graph.GetTarget(via_edge), uturn_id);
-        // check for a straight turn
-
-        const auto straightmost_index =
-            detail::findClosestTurnIndex(source_intersection, STRAIGHT_ANGLE);
-        if (angularDeviation(source_intersection[straightmost_index].turn.angle, STRAIGHT_ANGLE) >
-            FUZZY_ANGLE_DIFFERENCE)
-            return {};
-
-        const auto node_x =
-            node_based_graph.GetTarget(source_intersection[straightmost_index].turn.eid);
-        const auto intersection_at_straight = turn_analysis.getIntersection(
-            node_based_graph.GetTarget(uturn_id), source_intersection[straightmost_index].turn.eid);
-
-        // now check that the u-turn at the given intersection connects to via-edge
-        previous_id = intersection_at_straight[0].turn.eid;
-        previous_intersection = turn_analysis.getIntersection(node_x, previous_id);
-
-        const auto check_via_edge =
-            previous_intersection[detail::findClosestTurnIndex(previous_intersection,
-                                                               STRAIGHT_ANGLE)]
-                .turn.eid;
-        if (check_via_edge != via_edge)
-            return {};
+        if (!findPreviousIntersection(at,
+                                      via_edge,
+                                      intersection,
+                                      turn_analysis,
+                                      node_based_graph,
+                                      previous_node,
+                                      previous_id,
+                                      previous_intersection))
+            return "";
 
         const auto &previous_data = node_based_graph.GetEdgeData(previous_id);
         auto previous_string = previous_data.lane_string_id != INVALID_LANE_STRINGID
                                    ? turn_lane_strings.GetNameForID(previous_data.lane_string_id)
                                    : "";
-
         if (previous_string.empty())
-            return previous_string;
+            return "";
 
         previous_intersection =
-            turn_analysis.assignTurnTypes(node_x, previous_id, std::move(previous_intersection));
+            turn_analysis.assignTurnTypes(previous_node, previous_id, std::move(previous_intersection));
 
-        auto previous_lane_data =
-            laneDataFromString(previous_string);
+        auto previous_lane_data = laneDataFromString(previous_string);
 
         if (isSimpleIntersection(previous_lane_data, previous_intersection))
             return "";
-
         return previous_string;
     }();
 
@@ -361,11 +310,11 @@ Intersection TurnLaneHandler::assignTurnLanes(const EdgeID via_edge,
    intersection
    and the lane data to see what turns we have to augment by the none-lanes
  */
-LaneDataVector
-TurnLaneHandler::handleNoneValueAtSimpleTurn(LaneDataVector lane_data,
-                                             const Intersection &intersection) const
+LaneDataVector TurnLaneHandler::handleNoneValueAtSimpleTurn(LaneDataVector lane_data,
+                                                            const Intersection &intersection) const
 {
-    if (intersection.empty() || lane_data.empty() || detail::findTag("none", lane_data) == lane_data.size())
+    if (intersection.empty() || lane_data.empty() ||
+        detail::findTag("none", lane_data) == lane_data.size())
     {
         return lane_data;
     }
@@ -704,8 +653,7 @@ bool TurnLaneHandler::isSimpleIntersection(const LaneDataVector &lane_data,
 
             // lane_data.size() > 1
             if (lane_data.back().tag == "reverse")
-                return findBestMatchForReverse(lane_data[lane_data.size() - 2].tag,
-                                                              intersection);
+                return findBestMatchForReverse(lane_data[lane_data.size() - 2].tag, intersection);
 
             BOOST_ASSERT(lane_data.front().tag == "reverse");
             return findBestMatchForReverse(lane_data[1].tag, intersection);
@@ -727,10 +675,8 @@ bool TurnLaneHandler::isSimpleIntersection(const LaneDataVector &lane_data,
     return false;
 }
 
-std::pair<LaneDataVector, LaneDataVector>
-TurnLaneHandler::partitionLaneData(const NodeID at,
-                                   LaneDataVector turn_lane_data,
-                                   const Intersection &intersection) const
+std::pair<LaneDataVector, LaneDataVector> TurnLaneHandler::partitionLaneData(
+    const NodeID at, LaneDataVector turn_lane_data, const Intersection &intersection) const
 {
     BOOST_ASSERT(turn_lane_data.size() >= detail::getNumberOfTurns(intersection));
     /*
@@ -757,22 +703,21 @@ TurnLaneHandler::partitionLaneData(const NodeID at,
     // Try and maitch lanes to available turns. For Turns that are not directly matchable, check
     // whether we can match them at the upcoming intersection.
 
-    const auto straightmost_index = detail::findClosestTurnIndex(intersection, STRAIGHT_ANGLE);
+    const auto straightmost = findClosestTurn(intersection, STRAIGHT_ANGLE);
 
-    BOOST_ASSERT(straightmost_index < intersection.size());
-    const auto &straightmost = intersection[straightmost_index];
+    BOOST_ASSERT(straightmost < intersection.cend());
 
     // we need to be able to enter the straightmost turn
-    if (!straightmost.entry_allowed)
+    if (!straightmost->entry_allowed)
         return {turn_lane_data, {}};
 
     std::vector<bool> matched_at_first(turn_lane_data.size(), false);
     std::vector<bool> matched_at_second(turn_lane_data.size(), false);
 
     // find out about the next intersection. To check for valid matches, we also need the turn types
-    auto next_intersection = turn_analysis.getIntersection(at, straightmost.turn.eid);
+    auto next_intersection = turn_analysis.getIntersection(at, straightmost->turn.eid);
     next_intersection =
-        turn_analysis.assignTurnTypes(at, straightmost.turn.eid, std::move(next_intersection));
+        turn_analysis.assignTurnTypes(at, straightmost->turn.eid, std::move(next_intersection));
 
     // check where we can match turn lanes
     std::size_t straightmost_tag_index = turn_lane_data.size();
@@ -781,21 +726,19 @@ TurnLaneHandler::partitionLaneData(const NodeID at,
         if (turn_lane_data[lane].tag == "none" || turn_lane_data[lane].tag == "reverse")
             continue;
 
-        const auto best_match =
-            findBestMatch(turn_lane_data[lane].tag, intersection);
+        const auto best_match = findBestMatch(turn_lane_data[lane].tag, intersection);
         if (isValidMatch(turn_lane_data[lane].tag, best_match->turn.instruction))
         {
             matched_at_first[lane] = true;
 
-            if (static_cast<std::size_t>(std::distance(intersection.begin(), best_match)) ==
-                straightmost_index)
+            if (straightmost == best_match)
                 straightmost_tag_index = lane;
         }
 
         const auto best_match_at_next_intersection =
             findBestMatch(turn_lane_data[lane].tag, next_intersection);
         if (isValidMatch(turn_lane_data[lane].tag,
-                                        best_match_at_next_intersection->turn.instruction))
+                         best_match_at_next_intersection->turn.instruction))
             matched_at_second[lane] = true;
 
         // we need to match all items to either the current or the next intersection

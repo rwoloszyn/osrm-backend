@@ -39,12 +39,10 @@ inline bool choiceless(const RouteStep &step, const RouteStep &previous)
     // if the next turn is choiceless, we consider longer turn roads collapsable than usually
     // accepted. We might need to improve this to find out whether we merge onto a through-street.
     BOOST_ASSERT(!step.intersections.empty());
-    std::cout << "Checking for choice" << std::endl;
     const auto is_without_choice = previous.distance < 4 * MAX_COLLAPSE_DISTANCE &&
                                    1 >= std::count(step.intersections.front().entry.begin(),
                                                    step.intersections.front().entry.end(),
                                                    true);
-    std::cout << "Done: " << is_without_choice << std::endl;
     return is_without_choice;
 };
 
@@ -61,7 +59,7 @@ bool isCollapsableInstruction(const TurnInstruction instruction)
            (instruction.type == TurnType::Merge);
 }
 
-// A check whether two instructions can be treatedas one. This is only the case for very short
+// A check whether two instructions can be treated as one. This is only the case for very short
 // maneuvers that can, in some form, be seen as one. The additional in_step is to find out about
 // a possible u-turn.
 bool collapsable(const RouteStep &step)
@@ -126,12 +124,6 @@ RouteStep forwardInto(RouteStep destination, const RouteStep &source)
     destination.duration += source.duration;
     destination.distance += source.distance;
 
-    std::cout << "Forwarding" << std::endl;
-    print(destination);
-    std::cout << std::endl;
-    print(source);
-    std::cout << std::endl;
-
     if (destination.geometry_begin < source.geometry_begin)
     {
         destination.intersections.insert(destination.intersections.end(),
@@ -148,10 +140,6 @@ RouteStep forwardInto(RouteStep destination, const RouteStep &source)
     destination.geometry_begin = std::min(destination.geometry_begin, source.geometry_begin);
     destination.geometry_end = std::max(destination.geometry_end, source.geometry_end);
     destination.maneuver.exit = source.maneuver.exit;
-
-    std::cout << "Result:\n";
-    print(destination);
-    std::cout << std::endl;
 
     return destination;
 }
@@ -235,12 +223,9 @@ void closeOffRoundabout(const bool on_roundabout,
                         std::vector<RouteStep> &steps,
                         const std::size_t step_index)
 {
-    std::cout << "Closing at: " << step_index << std::endl;
-    print(steps);
     auto &step = steps[step_index];
     if (!on_roundabout)
     {
-        std::cout << "Not On Roundabout" << std::endl;
         // We reached a special case that requires the addition of a special route step in the
         // beginning. We started in a roundabout, so to announce the exit, we move use the exit
         // instruction and move it right to the beginning to make sure to immediately announce the
@@ -324,7 +309,6 @@ void closeOffRoundabout(const bool on_roundabout,
         }
         // remove exit
     }
-    print(steps);
 }
 
 // elongate a step by another. the data is added either at the front, or the back
@@ -367,14 +351,12 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
                     const std::size_t one_back_index,
                     const std::size_t step_index)
 {
-    std::cout << "Collapsing Turn" << std::endl;
     BOOST_ASSERT(step_index < steps.size());
     BOOST_ASSERT(one_back_index < steps.size());
     const auto &current_step = steps[step_index];
 
     const auto &one_back_step = steps[one_back_index];
 
-    std::cout << "Steps: " << step_index << " " << one_back_index << std::endl;
     // This function assumes driving on the right hand side of the streat
     const auto bearingsAreReversed = [](const double bearing_in, const double bearing_out) {
         // Nearly perfectly reversed angles have a difference close to 180 degrees (straight)
@@ -387,7 +369,6 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
     };
 
     BOOST_ASSERT(!one_back_step.intersections.empty() && !current_step.intersections.empty());
-    print(steps);
     // Very Short New Name
     if (((collapsable(one_back_step) ||
           (isCollapsableInstruction(one_back_step.maneuver.instruction) &&
@@ -395,7 +376,6 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
          !(one_back_step.maneuver.instruction.type == TurnType::Merge)))
     // the check against merge is a workaround for motorways
     {
-        std::cout << "First" << std::endl;
         BOOST_ASSERT(two_back_index < steps.size());
         if (compatible(one_back_step, steps[two_back_index]))
         {
@@ -415,7 +395,6 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
                          DirectionModifier::Straight &&
                      one_back_step.intersections.front().bearings.size() > 2)
                 steps[step_index].maneuver.instruction.type = TurnType::Turn;
-#if 1
             if (one_back_step.maneuver.instruction.type == TurnType::UseLane)
             {
                 if (current_step.maneuver.instruction.lane_tupel.lanes_in_turn == 0)
@@ -459,7 +438,6 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
                     }
                 }
             }
-#endif
             steps[two_back_index] = elongate(std::move(steps[two_back_index]), one_back_step);
             // If the previous instruction asked to continue, the name change will have to
             // be changed into a turn
@@ -470,7 +448,6 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
     else if (one_back_step.distance <= MAX_COLLAPSE_DISTANCE &&
              isCollapsableInstruction(current_step.maneuver.instruction))
     {
-        std::cout << "Second" << std::endl;
         // TODO check for lanes
         if (compatible(one_back_step, current_step))
         {
@@ -512,7 +489,6 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
              compatible(one_back_step, current_step))
 
     {
-        std::cout << "UTURN reached" << std::endl;
         BOOST_ASSERT(two_back_index < steps.size());
         // the simple case is a u-turn that changes directly into the in-name again
         const bool direct_u_turn = steps[two_back_index].name == current_step.name;
@@ -545,9 +521,7 @@ void collapseTurnAt(std::vector<RouteStep> &steps,
             steps[one_back_index].maneuver.instruction.direction_modifier =
                 DirectionModifier::UTurn;
         }
-        std::cout << "Done" << std::endl;
     }
-    std::cout << "Done" << std::endl;
 }
 
 } // namespace
@@ -663,7 +637,6 @@ std::vector<RouteStep> postProcess(std::vector<RouteStep> steps)
 // Post Processing to collapse unnecessary sets of combined instructions into a single one
 std::vector<RouteStep> collapseTurns(std::vector<RouteStep> steps)
 {
-    std::cout << "Collapsing" << std::endl;
     if (steps.size() <= 2)
         return steps;
 
@@ -710,9 +683,6 @@ std::vector<RouteStep> collapseTurns(std::vector<RouteStep> steps)
         const auto one_back_index = getPreviousIndex(step_index);
         BOOST_ASSERT(one_back_index < steps.size());
 
-        std::cout << "Indices: " << step_index << " " << one_back_index << std::endl;
-        print(current_step);
-        std::cout << std::endl;
         const auto &one_back_step = steps[one_back_index];
         // how long has a name change to be so that we announce it, even as a bridge?
         const constexpr auto name_segment_cutoff_length = 100;
@@ -726,7 +696,6 @@ std::vector<RouteStep> collapseTurns(std::vector<RouteStep> steps)
         // TurnType::Sliproad != TurnType::NoTurn
         if (one_back_step.maneuver.instruction.type == TurnType::Sliproad)
         {
-            std::cout << "A" << std::endl;
             // Handle possible u-turns between highways that look like slip-roads
             if (steps[getPreviousIndex(one_back_index)].name_id == steps[step_index].name_id &&
                 steps[step_index].name_id != EMPTY_NAMEID)
@@ -764,7 +733,6 @@ std::vector<RouteStep> collapseTurns(std::vector<RouteStep> steps)
                  steps[getPreviousNameIndex(step_index)].name == current_step.name &&
                  canCollapseAll(getPreviousNameIndex(step_index) + 1, step_index + 1))
         {
-            std::cout << "B" << std::endl;
             BOOST_ASSERT(step_index > 0);
             const std::size_t last_available_name_index = getPreviousNameIndex(step_index);
 
@@ -782,7 +750,6 @@ std::vector<RouteStep> collapseTurns(std::vector<RouteStep> steps)
                  isCollapsableInstruction(current_step.maneuver.instruction) &&
                  isCollapsableInstruction(one_back_step.maneuver.instruction))
         {
-            std::cout << "C" << std::endl;
             const auto two_back_index = getPreviousIndex(one_back_index);
             BOOST_ASSERT(two_back_index < steps.size());
             // valid, since one_back is collapsable:
@@ -826,7 +793,6 @@ std::vector<RouteStep> collapseTurns(std::vector<RouteStep> steps)
         else if (one_back_index > 0 && (one_back_step.distance <= MAX_COLLAPSE_DISTANCE ||
                                         choiceless(current_step, one_back_step)))
         {
-            std::cout << "D" << std::endl;
             // check for one of the multiple collapse scenarios and, if possible, collapse the turn
             const auto two_back_index = getPreviousIndex(one_back_index);
             BOOST_ASSERT(two_back_index < steps.size());

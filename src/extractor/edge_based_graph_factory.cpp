@@ -1,5 +1,5 @@
-#include "extractor/edge_based_graph_factory.hpp"
 #include "extractor/edge_based_edge.hpp"
+#include "extractor/edge_based_graph_factory.hpp"
 #include "util/coordinate.hpp"
 #include "util/coordinate_calculation.hpp"
 #include "util/exception.hpp"
@@ -342,8 +342,8 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
                                          m_compressed_edge_container,
                                          name_table,
                                          street_name_suffix_table);
-    guidance::lanes::TurnLaneHandler turn_lane_handler(*m_node_based_graph, turn_lanes, m_node_info_list,
-                                                turn_analysis);
+    guidance::lanes::TurnLaneHandler turn_lane_handler(
+        *m_node_based_graph, turn_lanes, m_node_info_list, turn_analysis);
 
     bearing_class_by_node_based_node.resize(m_node_based_graph->GetNumberOfNodes(),
                                             std::numeric_limits<std::uint32_t>::max());
@@ -364,14 +364,17 @@ void EdgeBasedGraphFactory::GenerateEdgeExpandedEdges(
             intersection =
                 turn_analysis.assignTurnTypes(node_u, edge_from_u, std::move(intersection));
 
-            intersection = turn_lane_handler.assignTurnLanes(edge_from_u, std::move(intersection));
+            intersection =
+                turn_lane_handler.assignTurnLanes(node_u, edge_from_u, std::move(intersection));
             const auto possible_turns = turn_analysis.transformIntersectionIntoTurns(intersection);
 
             // the entry class depends on the turn, so we have to classify the interesction for
             // every edge
-            const auto turn_classification =
-                classifyIntersection(node_v, intersection, *m_node_based_graph,
-                                     m_compressed_edge_container, m_node_info_list);
+            const auto turn_classification = classifyIntersection(node_v,
+                                                                  intersection,
+                                                                  *m_node_based_graph,
+                                                                  m_compressed_edge_container,
+                                                                  m_node_info_list);
 
             const auto entry_class_id = [&](const util::guidance::EntryClass entry_class) {
                 if (0 == entry_class_hash.count(entry_class))
