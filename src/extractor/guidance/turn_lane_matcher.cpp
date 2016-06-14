@@ -126,7 +126,6 @@ typename Intersection::const_iterator findBestMatchForReverse(const std::string 
     if (leftmost_itr + 1 == intersection.cend())
         return intersection.begin();
 
-    std::cout << "Leftmost is not at the end" << std::endl;
     const constexpr double idealized_turn_angles[] = {0, 35, 90, 135, 180, 225, 270, 315};
     const std::string tag = "reverse";
     const auto idealized_angle = idealized_turn_angles[getMatchingModifier(tag)];
