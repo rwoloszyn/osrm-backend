@@ -155,8 +155,6 @@ void ExtractorCallbacks::ProcessWay(const osmium::Way &input_way, const Extracti
         const auto &lane_map_iterator = lane_map.find(turn_lane_string);
         if (lane_map.end() == lane_map_iterator)
         {
-            std::cout << turn_lane_string << std::endl;
-            std::cout << external_memory.turn_lane_lengths.size() << std::endl;
             LaneStringID turn_lane_id =
                 boost::numeric_cast<LaneStringID>(external_memory.turn_lane_lengths.size());
             auto turn_lane_length = std::min<unsigned>(MAX_STRING_LENGTH, turn_lane_string.size());

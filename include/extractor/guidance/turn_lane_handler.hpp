@@ -38,7 +38,8 @@ class TurnLaneHandler
                     const std::vector<QueryNode> &node_info_list,
                     const TurnAnalysis &turn_analysis);
 
-    Intersection assignTurnLanes(const NodeID at, const EdgeID via_edge, Intersection intersection) const;
+    Intersection
+    assignTurnLanes(const NodeID at, const EdgeID via_edge, Intersection intersection) const;
 
   private:
     using LaneTupel = util::guidance::LaneTupel;
@@ -57,7 +58,6 @@ class TurnLaneHandler
 
     // in case of a simple intersection, assign the lane entries
     Intersection simpleMatchTuplesToTurns(Intersection intersection,
-                                          const LaneID num_lanes,
                                           const LaneDataVector &lane_data) const;
 
     // partition lane data into lane data relevant at current turn and at next turn
@@ -68,6 +68,12 @@ class TurnLaneHandler
     // lane tupels
     LaneDataVector handleNoneValueAtSimpleTurn(LaneDataVector lane_data,
                                                const Intersection &intersection) const;
+
+    // if the current intersections turn string is empty, we check whether there is an incoming
+    // intersection whose turns might be related to this current intersection
+    Intersection handleTurnAtPreviousIntersection(const NodeID at,
+                                                  const EdgeID via_edge,
+                                                  Intersection intersection) const;
 };
 
 } // namespace lanes
